@@ -29,10 +29,10 @@ class nexet(imdb):
         # name, paths
         self._image_set = image_set
         self._data_path = osp.join(cfg.DATA_DIR, "nexet")
-        self._integrate_classes = False
+        self._integrate_classes = integrate_classes
         self._classes = ('__background__',  # always index 0
                          "car", "van", "truck", "bus", "pickup_truck") \
-            if not self._integrate_classes else ("__bakcground__", "vehicle")
+            if not self._integrate_classes else ("__bakcground__", "VEHICLE")
         self._class_to_ind = dict(list(zip(self.classes, list(range(self.num_classes)))))
         #self._image_ext = '.jpg'
         self._image_index = self._load_image_set_index()
@@ -67,11 +67,11 @@ class nexet(imdb):
         Load the indexes listed in this dataset's image set file.
         :return:
         """
-        image_set_file = os.path.join(self._data_path, "train_boxes.csv")
+        image_set_file = os.path.join(self._data_path, "train.csv")
         assert os.path.exists(image_set_file), "Path does not exist: {}".format(image_set_file)
         with open(image_set_file) as f:
             image_index = [x.split(",")[0].strip() for x in f.readlines()[1:]]
-        return np.unique(image_index).tolist()   # Total 49282 images
+        return image_index   # Total 49282 images
 
     def gt_roidb(self):
         """
@@ -135,21 +135,59 @@ class nexet(imdb):
         path = os.path.join(self._data_path, filename)
         return path
 
-    # TODO : Write as CSV
     def _write_nexet_result_file(self, all_boxes):
-        for cls_ind, cls in enumerate(self.classes):
-            if cls == "__background__":
-                continue
-            print("Writing {} nexet results file".format(cls))
-            filename = self._get_nexet_results_file_template()
+        filename = self._get_nexet_results_file_template()
+        # classify each 5 vehicle types
+        if self._integrate_classes:
             with open(filename, 'wt') as f:
-                for im_ind, index in enumerate(self.image_index):
-                    dets = all_boxes[cls_ind][im_ind]
-                    if dets == []:
+                f.write("image_filename,x0,y0,x1,y1,label,confidence\n")
+                for cls_ind, cls in enumerate(self.classes):
+                    if cls == "__background__":
                         continue
-                    # TODO : the VOCdevkit expects 1-based indices
-                    for k in range(dets.shape[0]):
-                        f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
-                                format(index, dets[k, -1],
-                                       dets[k, 0] + 1, dets[k, 1] + 1,
-                                       dets[k, 2] + 1, dets[k, 3] + 1))
+                    print("Writing nexet results file ({s})".format(cls))
+                    for im_ind, index in enumerate(self.image_index):
+                        dets = all_boxes[cls_ind][im_ind]
+                        if dets == []:
+                            continue
+                        # TODO : the VOCdevkit expects 1-based indices ?
+                        for k in range(dets.shape[0]):
+                            f.write('{:s},{:.1f},{:.1f},{:.1f},{:.1f},{s},{:.3f}\n'.
+                                    format(index,
+                                           dets[k, 0] + 1, dets[k, 1] + 1, dets[k, 2] + 1, dets[k, 3] + 1,
+                                           cls,
+                                           dets[k, -1]))
+        # Only label VEHICLE
+        else:
+            with open(filename, 'wt') as f:
+                f.write("image_filename,x0,y0,x1,y1,label,confidence\n")
+                for cls_ind, cls in enumerate(self.classes):
+                    if cls == "__background__":
+                        continue
+                    print("Writing nexet results file")
+                    for im_ind, index in enumerate(self.image_index):
+                        dets = all_boxes[cls_ind][im_ind]
+                        if dets == []:
+                            continue
+                        # TODO : the VOCdevkit expects 1-based indices ?
+                        for k in range(dets.shape[0]):
+                            f.write('{:s},{:.1f},{:.1f},{:.1f},{:.1f},{s},{:.3f}\n'.
+                                    format(index,
+                                           dets[k, 0] + 1, dets[k, 1] + 1, dets[k, 2] + 1, dets[k, 3] + 1,
+                                           "VEHICLE",
+                                           dets[k, -1]))
+
+    def _do_python_eval(self):
+        annopath = os.path.join(self._data_path, "train_boxes.csv")
+        resultpath = self._get_nexet_results_file_template()
+        result_mAP = datasets.nexer_challenge_eval.evaluation(annopath, resultpath)
+        print(result_mAP)
+
+
+if __name__ == '__main__':
+  from datasets.nexet import nexet
+
+  d = nexet('train', True)
+  res = d.roidb
+  from IPython import embed;
+
+  embed()
