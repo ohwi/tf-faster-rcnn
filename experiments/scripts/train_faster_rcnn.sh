@@ -39,6 +39,22 @@ case ${DATASET} in
     ANCHORS="[4,8,16,32]"
     RATIOS="[0.5,1,2]"
     ;;
+  nexet_1label)
+    TRAIN_IMDB="nexet_2017_train_1label"
+    TEST_IMDB="nexet_2017_test"
+    STEPSIZE="[350000]"
+    ITERS=490000
+    ANCHORS="[4,8,16,32]"
+    RATIOS="[0.5,1,2]"
+    ;;
+  nexet_5label)
+    TRAIN_IMDB="nexet_2017_train_5labels"
+    TEST_IMDB="nexet_2017_test"
+    STEPSIZE="[350000]"
+    ITERS=490000
+    ANCHORS="[4,8,16,32]"
+    RATIOS="[0.5,1,2]"
+    ;;
   *)
     echo "No dataset given"
     exit

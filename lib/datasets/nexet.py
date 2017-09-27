@@ -23,12 +23,17 @@ import uuid
 
 class nexet(imdb):
     def __init__(self, image_set, integrate_classes=False):
-        name = "nexet_" + image_set
+        name = "nexet_2017_" + image_set
+        if image_set == "train":
+            if integrate_classes:
+                name += "_1label"
+            else:
+                name += "5labels"
         imdb.__init__(self, name)
 
         # name, paths
         self._image_set = image_set
-        self._data_path = osp.join(cfg.DATA_DIR, "nexet")
+        self._data_path = osp.join(cfg.DATA_DIR, name)
         self._integrate_classes = integrate_classes
         self._classes = ('__background__',  # always index 0
                          "car", "van", "truck", "bus", "pickup_truck") \
@@ -58,7 +63,7 @@ class nexet(imdb):
         :return:
         """
         # TODO : Need folder JPEGImages?
-        image_path = os.path.join(self._data_path, "JPEGImages", index)
+        image_path = os.path.join(self._data_path, "JPEGImages", self._image_set, index)
         assert os.path.exists(image_path), "Path does not exist: {}".format(image_path)
         return image_path
 
@@ -144,14 +149,14 @@ class nexet(imdb):
                 for cls_ind, cls in enumerate(self.classes):
                     if cls == "__background__":
                         continue
-                    print("Writing nexet results file ({s})".format(cls))
+                    print("Writing nexet results file ({:s})".format(cls))
                     for im_ind, index in enumerate(self.image_index):
                         dets = all_boxes[cls_ind][im_ind]
                         if dets == []:
                             continue
                         # TODO : the VOCdevkit expects 1-based indices ?
                         for k in range(dets.shape[0]):
-                            f.write('{:s},{:.1f},{:.1f},{:.1f},{:.1f},{s},{:.3f}\n'.
+                            f.write('{:s},{:.1f},{:.1f},{:.1f},{:.1f},{:s},{:.3f}\n'.
                                     format(index,
                                            dets[k, 0] + 1, dets[k, 1] + 1, dets[k, 2] + 1, dets[k, 3] + 1,
                                            cls,

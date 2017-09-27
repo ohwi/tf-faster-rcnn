@@ -13,6 +13,7 @@ from __future__ import print_function
 __sets = {}
 from datasets.pascal_voc import pascal_voc
 from datasets.coco import coco
+from datasets.nexet import nexet
 
 import numpy as np
 
@@ -38,6 +39,16 @@ for year in ['2015']:
   for split in ['test', 'test-dev']:
     name = 'coco_{}_{}'.format(year, split)
     __sets[name] = (lambda split=split, year=year: coco(split, year))
+
+# Set up Nexet_2017_<split>
+for year in ['2017']:
+  for split in ['train']:
+    for int_cls in [True, False]:
+      name = 'nexet_{}_{}_{}'.format(year, split, "1label" if int_cls else "5labels")
+      __sets[name] = (lambda split=split, year=year, int_cls=int_cls: nexet(split, int_cls))
+  for split in ['test']:
+    name = 'nexet_{}_{}'.format(year, split)
+    __sets[name] = (lambda split=split, year=year: nexet(split, False))
 
 
 def get_imdb(name):
